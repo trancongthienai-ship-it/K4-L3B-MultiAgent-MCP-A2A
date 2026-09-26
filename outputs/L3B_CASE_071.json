@@ -1,0 +1,104 @@
+{
+  "schema_version": "day09-l3b-output-v2",
+  "case_id": "L3B_CASE_071",
+  "assessment": {
+    "primary_issue": "late_delivery_logistics",
+    "secondary_issues": [
+      "requested_full_refund"
+    ],
+    "case_status": "action_required",
+    "confidence": 0.96
+  },
+  "affected_entities": {
+    "order_ids": [
+      "676e40056867189a1b3599f3e646f421"
+    ],
+    "item_ids": [
+      "item-676e40056867"
+    ],
+    "seller_ids": [
+      "seller-676e40056867"
+    ],
+    "payment_references": [],
+    "shipment_ids": []
+  },
+  "claim_assessments": [
+    {
+      "claim_id": "claim-071-a",
+      "verdict": "supported",
+      "confidence": 0.96,
+      "evidence_refs": [
+        "ev_WuyQROLlt62ZBA_NJ-OslltwsXJ8m2P7",
+        "ev_7l3sQFEw9xhUXl44SSidVhrtAqv_T-px"
+      ]
+    },
+    {
+      "claim_id": "claim-071-b",
+      "verdict": "unsupported",
+      "confidence": 0.96,
+      "evidence_refs": [
+        "ev_ecGqVqwZ_kLn7rOxtU9XbNLq7HL_XhfB",
+        "ev_l38Ff3QlVfn7NHVqFbjXpa-_2TWJcJAG"
+      ]
+    }
+  ],
+  "entity_resolution": {
+    "status": "resolved",
+    "resolved_order_ids": [
+      "676e40056867189a1b3599f3e646f421"
+    ],
+    "rejected_candidates": [
+      "candidate-071"
+    ],
+    "confidence": 0.98
+  },
+  "customer_context": {
+    "customer_unique_id": "customer-99f3e646f421",
+    "related_order_ids": [
+      "676e40056867189a1b3599f3e646f421"
+    ]
+  },
+  "shipment_analysis": {
+    "verdict": "insufficient_evidence",
+    "late_seller_ids": [],
+    "timeline_complete": false
+  },
+  "payment_analysis": {
+    "verdict": "reconciled",
+    "captured_total_brl": null,
+    "refunded_total_brl": 0.0,
+    "refundable_total_brl": null
+  },
+  "root_cause_analysis": {
+    "ranked_causes": [
+      {
+        "cause_code": "LOGISTICS_TRANSIT_DELAY",
+        "rank": 1
+      }
+    ],
+    "responsible_parties": [
+      {
+        "party_type": "logistics_provider",
+        "party_id": null
+      }
+    ]
+  },
+  "evidence_refs": [
+    "ev_CDJK5ZNXY7Z3G5hHO2cqsnuKmo2yLCRs",
+    "ev_7l3sQFEw9xhUXl44SSidVhrtAqv_T-px",
+    "ev_WuyQROLlt62ZBA_NJ-OslltwsXJ8m2P7",
+    "ev_ecGqVqwZ_kLn7rOxtU9XbNLq7HL_XhfB",
+    "ev_l38Ff3QlVfn7NHVqFbjXpa-_2TWJcJAG",
+    "ev_w0Zhi2vOaRcdussg-5MRtg0H12_Vjjn5",
+    "ev_dIAC69oL_Eq3-t7qfcQUtjLBaiG4vUi8"
+  ],
+  "data_conflicts": [],
+  "financial_resolution": {
+    "currency": "BRL",
+    "recommended_refund_brl": 0.0,
+    "refund_lines": []
+  },
+  "resolution_actions": [
+    "ISSUE_REFUND_AND_REVIEW_LOGISTICS"
+  ]
+}

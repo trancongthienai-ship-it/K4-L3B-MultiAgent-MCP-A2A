@@ -1,0 +1,109 @@
+{
+  "schema_version": "day09-l3b-output-v2",
+  "case_id": "L3B_CASE_047",
+  "assessment": {
+    "primary_issue": "unsupported_claim",
+    "secondary_issues": [
+      "requested_full_refund"
+    ],
+    "case_status": "no_action",
+    "confidence": 0.96
+  },
+  "affected_entities": {
+    "order_ids": [
+      "fd28a6dfe413804d0b89b7c9abf5b1f3"
+    ],
+    "item_ids": [
+      "item-fd28a6dfe413"
+    ],
+    "seller_ids": [
+      "seller-fd28a6dfe413"
+    ],
+    "payment_references": [],
+    "shipment_ids": []
+  },
+  "claim_assessments": [
+    {
+      "claim_id": "claim-047-a",
+      "verdict": "unsupported",
+      "confidence": 0.96,
+      "evidence_refs": [
+        "ev_8tBO2VF5F0M9RIlqhZyysA2b2nKcybZh",
+        "ev_h54V08TnDkWwgfFXnOZ1f3422RNvykmA",
+        "ev_H0_xJaF3zPMLVcXZUgVAYvZBWmyZ99bD",
+        "ev_DVbizUefQZ-A52ha22wn8ZBRz9DepkgI",
+        "ev_hyUHlvpDzOHCijJ9b7ZJmSanHuDm8_Z7",
+        "ev_Nd8wsgmSh1IMLEoPNp_jvw9zcIHqQyC6",
+        "ev_xaBf5Ab_9phI0lGvQKvkq2eUkXli346G"
+      ]
+    },
+    {
+      "claim_id": "claim-047-b",
+      "verdict": "unsupported",
+      "confidence": 0.96,
+      "evidence_refs": [
+        "ev_DVbizUefQZ-A52ha22wn8ZBRz9DepkgI",
+        "ev_hyUHlvpDzOHCijJ9b7ZJmSanHuDm8_Z7"
+      ]
+    }
+  ],
+  "entity_resolution": {
+    "status": "resolved",
+    "resolved_order_ids": [
+      "fd28a6dfe413804d0b89b7c9abf5b1f3"
+    ],
+    "rejected_candidates": [
+      "candidate-047"
+    ],
+    "confidence": 0.98
+  },
+  "customer_context": {
+    "customer_unique_id": "customer-b7c9abf5b1f3",
+    "related_order_ids": [
+      "fd28a6dfe413804d0b89b7c9abf5b1f3"
+    ]
+  },
+  "shipment_analysis": {
+    "verdict": "insufficient_evidence",
+    "late_seller_ids": [],
+    "timeline_complete": false
+  },
+  "payment_analysis": {
+    "verdict": "reconciled",
+    "captured_total_brl": null,
+    "refunded_total_brl": 0.0,
+    "refundable_total_brl": null
+  },
+  "root_cause_analysis": {
+    "ranked_causes": [
+      {
+        "cause_code": "CLAIM_NOT_SUPPORTED",
+        "rank": 1
+      }
+    ],
+    "responsible_parties": [
+      {
+        "party_type": "customer",
+        "party_id": null
+      }
+    ]
+  },
+  "evidence_refs": [
+    "ev_8tBO2VF5F0M9RIlqhZyysA2b2nKcybZh",
+    "ev_h54V08TnDkWwgfFXnOZ1f3422RNvykmA",
+    "ev_H0_xJaF3zPMLVcXZUgVAYvZBWmyZ99bD",
+    "ev_DVbizUefQZ-A52ha22wn8ZBRz9DepkgI",
+    "ev_hyUHlvpDzOHCijJ9b7ZJmSanHuDm8_Z7",
+    "ev_Nd8wsgmSh1IMLEoPNp_jvw9zcIHqQyC6",
+    "ev_xaBf5Ab_9phI0lGvQKvkq2eUkXli346G"
+  ],
+  "data_conflicts": [],
+  "financial_resolution": {
+    "currency": "BRL",
+    "recommended_refund_brl": 0.0,
+    "refund_lines": []
+  },
+  "resolution_actions": [
+    "NO_ACTION_UNSUPPORTED_CLAIM"
+  ]
+}

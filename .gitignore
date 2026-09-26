@@ -17,16 +17,11 @@ venv/
 htmlcov/
 
 # Competition runtime artifacts
-case-set.json
-inputs/*
-!inputs/.gitkeep
-outputs/*
-!outputs/.gitkeep
 traces/*
 !traces/.gitkeep
-dist/*
-!dist/.gitkeep
 *.zip
+!dist/
+!dist/**
 *.log
 
 # Editors and operating systems
