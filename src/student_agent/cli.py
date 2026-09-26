@@ -6,6 +6,9 @@ import json
 import sys
 from pathlib import Path
 
+import httpx2
+
+from . import VARIANT_ID
 from .cases import load_case_set
 from .config import Settings
 from .contracts import Contracts
@@ -19,6 +22,12 @@ def _root(value: str) -> Path:
     return Path(value).resolve()
 
 
+def _error_message(exc: BaseException) -> str:
+    if isinstance(exc, BaseExceptionGroup) and exc.exceptions:
+        return _error_message(exc.exceptions[0])
+    return str(exc)
+
+
 async def _show_tools(root: Path) -> None:
     settings = Settings.load(root)
     contracts = Contracts(root / "contracts" / "schemas")
@@ -27,10 +36,41 @@ async def _show_tools(root: Path) -> None:
             print(tool)
 
 
+async def _activate_run(settings: Settings, case_set_version: str) -> None:
+    """Create or resume the team run required before evidence tools can execute."""
+    headers = {
+        "Authorization": f"Bearer {settings.team_api_key}",
+        "Content-Type": "application/json",
+    }
+    url = f"{settings.competition_api_url}/api/v2/runs"
+    async with httpx2.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+        response = await client.post(url, headers=headers, json={"variant_id": VARIANT_ID})
+    if response.is_error:
+        try:
+            error = response.json()
+        except ValueError:
+            error = response.text
+        raise RuntimeError(f"Competition API could not activate the run: {error}")
+    try:
+        run = response.json()
+    except ValueError as exc:
+        raise RuntimeError("Competition API returned an invalid run response") from exc
+    if run.get("variant_id") != VARIANT_ID:
+        active_variant = run.get("variant_id")
+        raise RuntimeError(f"Competition API activated the wrong variant: {active_variant!r}")
+    remote_version = run.get("case_set_version")
+    if remote_version != case_set_version:
+        raise RuntimeError(
+            "Local inputs do not match the active run: "
+            f"local={case_set_version!r}, remote={remote_version!r}"
+        )
+
+
 async def _run(root: Path) -> None:
     settings = Settings.load(root)
     case_set = load_case_set(root)
     contracts = Contracts(root / "contracts" / "schemas")
+    await _activate_run(settings, case_set.version)
     output_root = root / "outputs"
     trace_path = root / "traces" / "trace.jsonl"
     output_root.mkdir(parents=True, exist_ok=True)
@@ -80,8 +120,7 @@ def main() -> None:
         if args.command == "validate-inputs":
             case_set = load_case_set(root)
             print(
-                f"OK: {case_set.variant_id} / {case_set.version} / "
-                f"{len(case_set.case_ids)} cases"
+                f"OK: {case_set.variant_id} / {case_set.version} / {len(case_set.case_ids)} cases"
             )
         elif args.command == "mcp-tools":
             asyncio.run(_show_tools(root))
@@ -95,8 +134,8 @@ def main() -> None:
         elif args.command == "package":
             destination = package_submission(root, root / args.output)
             print(f"OK: {destination}")
-    except (OSError, RuntimeError, ValueError) as exc:
-        print(f"ERROR: {exc}", file=sys.stderr)
+    except (OSError, RuntimeError, ValueError, ExceptionGroup) as exc:
+        print(f"ERROR: {_error_message(exc)}", file=sys.stderr)
         raise SystemExit(1) from exc
 
 
