@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -42,6 +43,18 @@ class Contracts:
 
     def validate_output(self, value: Any, label: str) -> None:
         self.validate(f"{VARIANT_ID}-output-v2.schema.json", value, label)
+
+    def output_schema(self) -> dict[str, Any]:
+        """Return the output schema and its referenced schema for an LLM prompt."""
+        output_name = f"{VARIANT_ID}-output-v2.schema.json"
+        return {
+            "main": deepcopy(self._schemas[output_name]),
+            "references": {
+                "l3a-output-v2.schema.json": deepcopy(
+                    self._schemas["l3a-output-v2.schema.json"]
+                )
+            },
+        }
 
     def validate_trace(self, value: Any, label: str) -> None:
         self.validate("trace-event-v1.schema.json", value, label)

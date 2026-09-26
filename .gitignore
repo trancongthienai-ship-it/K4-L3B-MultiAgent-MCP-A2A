@@ -16,7 +16,14 @@ venv/
 .coverage
 htmlcov/
 
-# Competition runtime artifacts
+# Competition data and generated submissions are intentionally tracked
+!case-set.json
+!inputs/
+!inputs/**
+!outputs/
+!outputs/**
+
+# Local trace and log artifacts remain ignored
 traces/*
 !traces/.gitkeep
 *.zip

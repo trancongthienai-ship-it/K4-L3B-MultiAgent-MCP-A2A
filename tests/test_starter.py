@@ -7,6 +7,7 @@ import pytest
 
 from student_agent import OUTPUT_SCHEMA_VERSION, VARIANT_ID
 from student_agent.cases import CaseSet, load_case_set
+from student_agent.config import Settings
 from student_agent.contracts import Contracts
 from student_agent.submission import build_manifest
 
@@ -45,3 +46,19 @@ def test_generated_manifest_matches_public_contract() -> None:
     manifest = build_manifest(case_set)
     contracts.validate_manifest(manifest)
     assert manifest["output_schema_version"] == OUTPUT_SCHEMA_VERSION
+
+
+def test_settings_loads_configured_llama_model(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("COMPETITION_API_URL", "https://competition.example")
+    monkeypatch.setenv("COMPETITION_TEAM_API_KEY", "sk-team-1234567890abcdef")
+    monkeypatch.setenv("MCP_ENDPOINT", "https://mcp.example/mcp")
+    monkeypatch.setenv("LLM_API_URL", "https://openrouter.ai/api/v1/chat/completions")
+    monkeypatch.setenv("LLM_API_KEY", "test-key")
+    monkeypatch.setenv("LLM_MODEL", "meta-llama/llama-3.1-8b-instruct")
+
+    settings = Settings.load(tmp_path)
+
+    assert settings.llm_enabled is True
+    assert settings.llm_model == "meta-llama/llama-3.1-8b-instruct"

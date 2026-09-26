@@ -5,6 +5,7 @@ from collections.abc import Iterable
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import Any
 
+from .llm_verifier import LLMInvestigator
 from .mcp_gateway import EvidenceGateway
 from .trace import TraceWriter
 
@@ -235,7 +236,10 @@ def _root_cause(
 
 
 async def solve_case(
-    case: dict[str, Any], gateway: EvidenceGateway, trace: TraceWriter
+    case: dict[str, Any],
+    gateway: EvidenceGateway,
+    trace: TraceWriter,
+    investigator: LLMInvestigator | None = None,
 ) -> dict[str, Any]:
     """Resolve and investigate one L3B case using bounded, case-scoped evidence calls."""
     case_id = str(case["case_id"])
@@ -374,13 +378,13 @@ async def solve_case(
 
     specialist_refs = _unique(
         [
-        items["evidence_ref"],
-        shipment["evidence_ref"],
-        payment["evidence_ref"],
-        *([refund["evidence_ref"]] if refund else []),
-        policy["evidence_ref"],
-        customer["evidence_ref"],
-        product["evidence_ref"],
+            items["evidence_ref"],
+            shipment["evidence_ref"],
+            payment["evidence_ref"],
+            *([refund["evidence_ref"]] if refund else []),
+            policy["evidence_ref"],
+            customer["evidence_ref"],
+            product["evidence_ref"],
         ],
         20,
     )
@@ -591,22 +595,57 @@ async def solve_case(
         "resolution_actions": actions,
     }
 
+    generation_code = "DETERMINISTIC_RESULT_GENERATED"
+    generation_attributes: dict[str, str | int | bool] = {
+        "evidence_count": len(evidence_refs),
+        "call_count": len(evidence),
+        "llm_enabled": investigator is not None,
+    }
+    if investigator is not None:
+        trace.emit(
+            case_id=case_id,
+            event_type="task_assigned",
+            actor="coordinator",
+            target="llm-investigator",
+            decision_code="GENERATE_INVESTIGATION_RESULT",
+            evidence_refs=evidence_refs[:20],
+        )
+        try:
+            output = await investigator.generate(
+                case=case, evidence=evidence, baseline=output
+            )
+        except RuntimeError:
+            generation_code = "LLM_GENERATION_FALLBACK"
+            generation_attributes["llm_model"] = investigator.model
+        else:
+            generation_code = "LLM_RESULT_GENERATED"
+            generation_attributes.update(
+                {"llm_model": investigator.model, "llm_result_used": True}
+            )
+
     trace.emit(
         case_id=case_id,
         event_type="policy_decided",
-        actor="conflict-resolver",
+        actor=(
+            "llm-investigator"
+            if generation_code == "LLM_RESULT_GENERATED"
+            else "conflict-resolver"
+        ),
         target="verifier",
         decision_code="POLICY_AND_CONFLICTS_RESOLVED",
         evidence_refs=[policy["evidence_ref"]],
-        attributes={"primary_issue": issue, "conflict_count": len(conflict_rows)},
+        attributes={
+            "primary_issue": output["assessment"]["primary_issue"],
+            "conflict_count": len(output["data_conflicts"]),
+        },
     )
     trace.emit(
         case_id=case_id,
         event_type="verification_completed",
         actor="verifier",
         target="coordinator",
-        decision_code="OUTPUT_INVARIANTS_PASSED",
+        decision_code=generation_code,
         evidence_refs=evidence_refs[:20],
-        attributes={"evidence_count": len(evidence_refs), "call_count": len(evidence)},
+        attributes=generation_attributes,
     )
     return output

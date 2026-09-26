@@ -9,18 +9,21 @@ Entity Agent xác nhận một order hợp lệ bằng `get_order`. Candidate kh
 được loại tại client để không lãng phí MCP call; candidate hợp lệ được thử tuần tự và có giới hạn.
 
 ```text
-Input → Entity Resolver → Coordinator → Specialists → Conflict Resolver → Verifier → Output
-            │                              │                  │             │
-            └──────────────────────────── MCP ────────────────┴──────────── Trace
+Input → Entity Resolver → Coordinator → Specialists → LLM Investigator → Verifier → Output
+            │                              │                   │              │
+            └──────────────────────────── MCP ─────────────────┴───────────── Trace
 ```
 
 Trước khi mở MCP session, CLI gọi Competition API để create/resume run của team và xác nhận
 `variant_id` cùng `case_set_version` khớp bộ input local. Bước này là bắt buộc vì tool discovery
 không cần active run nhưng mọi evidence tool cần run scope hợp lệ.
 
-Specialist trả evidence envelope, không trả kết luận tự do. Coordinator tạo output xác định
-(deterministic) từ evidence; entity IDs và provenance luôn được lấy từ payload đã validate.
-Verifier ghi trạng thái cuối, còn CLI validate output bằng JSON Schema trước khi ghi atomically.
+Specialist trả evidence envelope, không trả kết luận tự do. Coordinator tạo baseline từ evidence;
+entity IDs và provenance luôn được lấy từ payload đã validate. Khi có `LLM_API_KEY`, LLM
+Investigator gửi case, evidence, baseline và output schema tới endpoint OpenAI-compatible bằng
+model cấu hình trong `LLM_MODEL`, sau đó dùng JSON trả về làm kết quả điều tra. Guardrail bắt buộc
+giữ nguyên provenance, entity, customer facts và số tiền quan sát được; refund không được vượt mức
+refundable. Verifier kiểm tra schema/grounding trước khi CLI ghi kết quả atomically.
 
 ## 2. Agent ownership
 
@@ -33,7 +36,8 @@ Verifier ghi trạng thái cuối, còn CLI validate output bằng JSON Schema t
 | Payment/refund | resolved order | captured/refunded/refundable totals | `get_payment_timeline`, `get_refund_timeline` | payment verdict và totals |
 | Policy | policy version | lấy policy đúng version/case | `get_policy` | policy evidence |
 | Conflict resolver | draft và evidence | precedence, conflicts, semantic review | không gọi MCP | bounded corrections |
-| Verifier | output draft | invariant và provenance checks | không gọi MCP | `verification_completed` |
+| LLM Investigator | case, evidence, schema, baseline | tạo full investigation output JSON | OpenAI-compatible API | generated result |
+| Verifier | generated result | schema, invariant, provenance và financial grounding | không gọi MCP | `verification_completed` |
 
 Áp dụng least privilege; tool discovery không đồng nghĩa mọi actor đều được gọi mọi tool.
 
@@ -93,8 +97,10 @@ evidence ref hoặc số tiền.
 
 - Runtime: Python 3.11+, dependency ranges trong `pyproject.toml`, xử lý case tuần tự và MCP calls
   tuần tự trên một session. Không dùng random cho quyết định nghiệp vụ.
-- Workflow chạy deterministic từ structured MCP evidence, không phụ thuộc model ngoài và không
-  gửi dữ liệu case hoặc credential sang dịch vụ LLM khác.
+- Khi bật LLM Investigator, case/evidence/baseline/schema được gửi tới `LLM_API_URL`; API key chỉ
+  nằm trong Authorization header. Model tạo kết luận nghiệp vụ và full output, còn các fact có
+  provenance được khóa bởi guardrail. Nếu request, JSON, schema hoặc grounding lỗi, trace ghi
+  `LLM_GENERATION_FALLBACK` và workflow dùng baseline deterministic.
 - Lệnh chuẩn: `pytest -q`, `ruff check .`, `day09 validate-inputs`, `day09 run`, `day09 validate`.
 - Trace event IDs/timestamps không deterministic nhưng không ảnh hưởng quyết định hoặc totals.
 - API key chỉ đọc từ `.env`, không được đưa vào prompt, output, trace hoặc submission ZIP.

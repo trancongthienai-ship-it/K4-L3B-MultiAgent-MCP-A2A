@@ -47,6 +47,19 @@ COMPETITION_TEAM_API_KEY=sk-team-your_key
 MCP_ENDPOINT=http://127.0.0.1:8001/mcp
 ```
 
+Để Llama tạo kết quả điều tra cuối cùng qua OpenRouter, cấu hình thêm:
+
+```dotenv
+LLM_API_URL=https://openrouter.ai/api/v1/chat/completions
+LLM_API_KEY=your_openrouter_api_key
+LLM_MODEL=meta-llama/llama-3.1-8b-instruct
+```
+
+Llama nhận case, evidence MCP, output schema và một baseline đã trích xuất từ evidence để tạo full
+output JSON. Kết quả chỉ được dùng sau khi vượt qua kiểm tra schema, provenance, entity và giới hạn
+số tiền. Nếu `LLM_API_KEY` để trống hoặc model trả kết quả không an toàn, workflow dùng baseline
+deterministic làm fallback.
+
 ## 3. Tải input
 
 Tải ZIP input **L3B** từ GitHub Release và giải nén vào root repo:

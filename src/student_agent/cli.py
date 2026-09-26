@@ -12,6 +12,7 @@ from . import VARIANT_ID
 from .cases import load_case_set
 from .config import Settings
 from .contracts import Contracts
+from .llm_verifier import LLMInvestigator
 from .mcp_gateway import connect_gateway
 from .submission import package_submission, validate_artifacts
 from .trace import TraceWriter
@@ -79,6 +80,16 @@ async def _run(root: Path) -> None:
         stale.unlink()
     trace_path.unlink(missing_ok=True)
     trace = TraceWriter(trace_path, contracts)
+    investigator = None
+    if settings.llm_enabled:
+        assert settings.llm_api_url is not None
+        assert settings.llm_api_key is not None
+        investigator = LLMInvestigator(
+            api_url=settings.llm_api_url,
+            api_key=settings.llm_api_key,
+            model=settings.llm_model,
+            contracts=contracts,
+        )
 
     async with connect_gateway(settings.mcp_endpoint, settings.team_api_key, contracts) as gateway:
         discovered_tools = await gateway.list_tools()
@@ -87,7 +98,7 @@ async def _run(root: Path) -> None:
         for case_id in case_set.case_ids:
             case = case_set.cases[case_id]
             trace.emit(case_id=case_id, event_type="case_received", actor="coordinator")
-            output = await solve_case(case, gateway, trace)
+            output = await solve_case(case, gateway, trace, investigator=investigator)
             contracts.validate_output(output, f"outputs/{case_id}.json")
             if output.get("case_id") != case_id:
                 raise ValueError(f"solver returned a mismatched case_id for {case_id}")

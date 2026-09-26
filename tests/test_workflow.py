@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -78,6 +79,19 @@ class FakeGateway:
         }
 
 
+class FakeInvestigator:
+    model = "meta-llama/llama-3.1-8b-instruct"
+
+    def __init__(self) -> None:
+        self.called = False
+
+    async def generate(self, **arguments: Any) -> dict[str, Any]:
+        self.called = True
+        result = deepcopy(arguments["baseline"])
+        result["assessment"]["confidence"] = 0.77
+        return result
+
+
 def test_workflow_resolves_case_with_bounded_evidence_calls(
     tmp_path: Path, monkeypatch: Any
 ) -> None:
@@ -104,8 +118,9 @@ def test_workflow_resolves_case_with_bounded_evidence_calls(
     contracts = Contracts(root / "contracts" / "schemas")
     trace = TraceWriter(tmp_path / "trace.jsonl", contracts)
     gateway = FakeGateway(order_id)
+    investigator = FakeInvestigator()
 
-    output = asyncio.run(solve_case(case, gateway, trace))
+    output = asyncio.run(solve_case(case, gateway, trace, investigator=investigator))
 
     contracts.validate_output(output, "test output")
     assert output["entity_resolution"] == {
@@ -118,12 +133,15 @@ def test_workflow_resolves_case_with_bounded_evidence_calls(
     assert output["shipment_analysis"]["verdict"] == "logistics_delay"
     assert output["payment_analysis"]["captured_total_brl"] == 110.0
     assert output["financial_resolution"]["recommended_refund_brl"] == 110.0
+    assert output["assessment"]["confidence"] == 0.77
+    assert investigator.called is True
     assert len(output["evidence_refs"]) == 8
     assert len(gateway.calls) == 8
 
     events = [line for line in (tmp_path / "trace.jsonl").read_text().splitlines() if line]
     assert events
     assert any('"event_type":"verification_completed"' in event for event in events)
+    assert any('"decision_code":"LLM_RESULT_GENERATED"' in event for event in events)
 
 
 def test_workflow_treats_missing_refund_timeline_as_no_prior_refund(tmp_path: Path) -> None:
